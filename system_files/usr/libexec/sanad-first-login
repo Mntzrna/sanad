@@ -1,0 +1,28 @@
+#!/usr/bin/bash
+# Runs once per user at first login (autostart in /etc/skel).
+STAMP="$HOME/.config/sanad-first-login.done"
+[ -e "$STAMP" ] && exit 0
+sleep 8
+
+# Wallpaper
+WP=/usr/share/wallpapers/Sanad/contents/images/1920x1080.png
+command -v plasma-apply-wallpaperimage >/dev/null && plasma-apply-wallpaperimage "$WP" || true
+
+# Gaming and everyday apps (Flatpak, per-user, needs internet)
+APPS=(
+  com.heroicgameslauncher.hgl   # Epic / GOG / Amazon games
+  net.davidotek.pupgui2         # ProtonUp-Qt (Proton-GE manager)
+  com.usebottles.bottles        # Windows apps/games prefixes
+  com.discordapp.Discord
+  org.libreoffice.LibreOffice
+  org.videolan.VLC
+)
+notify-send -i sanad "Sanad" "Installing games and apps in the background..." 2>/dev/null || true
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+if flatpak install --user -y --noninteractive flathub "${APPS[@]}"; then
+  notify-send -i sanad "Sanad" "Apps are ready." 2>/dev/null || true
+  touch "$STAMP"
+else
+  # No internet yet: retry at the next login.
+  notify-send -i sanad "Sanad" "Could not install apps (no internet?). Will retry next login." 2>/dev/null || true
+fi
